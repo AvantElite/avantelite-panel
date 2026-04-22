@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { TrendingUp, TrendingDown, Users, AlertCircle, MessageSquare, CheckCircle } from "lucide-react"
 import { LineChart, Line, ResponsiveContainer } from "recharts"
 
-export function KpiCards({ total = 0, nuevos = 0, leidos = 0 }: { total?: number; nuevos?: number; leidos?: number }) {
+export function KpiCards({ total = 0, nuevos = 0, leidos = 0, tiempoRespuesta }: { total?: number; nuevos?: number; leidos?: number; tiempoRespuesta?: string | null }) {
   const percentageLeidos = total > 0 ? Math.round((leidos / total) * 100) : 0;
 
   const kpis = [
@@ -26,7 +26,7 @@ export function KpiCards({ total = 0, nuevos = 0, leidos = 0 }: { total?: number
     },
     {
       title: "Tiempo de Respuesta",
-      value: "1.2h",
+      value: tiempoRespuesta ?? "—",
       change: "-15%",
       trend: "down" as const,
       icon: AlertCircle,

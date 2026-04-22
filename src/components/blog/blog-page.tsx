@@ -5,7 +5,7 @@ import type { BlogPost } from "@/types/blog"
 import { BlogEditor } from "./blog-editor"
 import { BlogPreview } from "./blog-preview"
 
-const API_URL = "http://localhost/backendavant/blog_panel.php"
+const API_URL = "http://localhost/backendavant/api.php?r=blog&panel=1"
 
 export function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([])
@@ -171,7 +171,11 @@ export function BlogPage() {
             {filteredPosts.map(post => (
               <div key={post.id} className="flex items-center gap-4 p-4 hover:bg-accent/5 transition-colors">
                 {/* Emoji */}
-                <div className="text-2xl w-10 text-center shrink-0">{post.emoji}</div>
+                <div className="w-10 h-10 shrink-0 flex items-center justify-center">
+                  {post.emoji?.startsWith("http")
+                    ? <img src={post.emoji} alt="" className="w-10 h-10 rounded object-cover" />
+                    : <span className="text-2xl">{post.emoji}</span>}
+                </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">

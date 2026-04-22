@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react"
-import { ArrowLeft, Save, Eye, EyeOff, BookOpen, AlertCircle } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { ArrowLeft, Save, Eye, EyeOff, BookOpen, AlertCircle, ImagePlus, X } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { cn } from "@/lib/utils"
@@ -44,6 +44,21 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [autoSlug, setAutoSlug] = useState(true)
+  const [uploadingImg, setUploadingImg] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImg(true)
+    const fd = new FormData()
+    fd.append("imagen", file)
+    try {
+      const res = await fetch("http://localhost/backendavant/api.php?r=blog/upload-imagen", { method: "POST", body: fd })
+      const data = await res.json()
+      if (data.url) setForm(p => ({ ...p, emoji: data.url }))
+      else setSaveError(data.error ?? "Error al subir la imagen.")
+    } catch { setSaveError("No se pudo conectar con el servidor.") }
+    setUploadingImg(false)
+  }
 
   useEffect(() => {
     if (post) {
@@ -90,7 +105,7 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex flex-col space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -143,9 +158,9 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
         </div>
       )}
 
-      <div className={cn("flex gap-4 flex-1 overflow-hidden", showPreview ? "flex-row" : "flex-col")}>
+      <div className={cn("flex gap-4", showPreview ? "flex-row" : "flex-col")}>
         {/* Form */}
-        <div className={cn("flex flex-col gap-4 overflow-y-auto", showPreview ? "w-1/2" : "w-full")}>
+        <div className={cn("flex flex-col gap-4", showPreview ? "w-1/2" : "w-full")}>
 
           {/* Meta fields */}
           <div className="glass-panel rounded-xl p-5 grid grid-cols-2 gap-4">
@@ -196,17 +211,39 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
               />
             </div>
 
-            {/* Emoji */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">Emoji</label>
-              <input
-                type="text"
-                value={form.emoji}
-                onChange={e => setForm(p => ({ ...p, emoji: e.target.value }))}
-                placeholder="🛠️"
-                maxLength={4}
-                className="h-10 w-full rounded-lg border border-input bg-background/50 px-3 text-sm text-center text-xl focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              />
+            {/* Imagen de portada */}
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">Imagen de portada</label>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+                onChange={e => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0]) }} />
+              {form.emoji && form.emoji.startsWith("http") ? (
+                <div className="relative w-full h-36 rounded-lg overflow-hidden border border-input group">
+                  <img src={form.emoji} alt="portada" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                    <button type="button" onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition-colors">
+                      <ImagePlus className="h-3.5 w-3.5" /> Cambiar
+                    </button>
+                    <button type="button" onClick={() => setForm(p => ({ ...p, emoji: "🛠️" }))}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors">
+                      <X className="h-3.5 w-3.5" /> Quitar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImg}
+                  className="flex flex-col items-center justify-center w-full h-36 rounded-lg border-2 border-dashed border-white/20 bg-white/5 text-muted-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-foreground transition-colors disabled:opacity-50">
+                  {uploadingImg ? (
+                    <span className="text-sm">Subiendo…</span>
+                  ) : (
+                    <>
+                      <ImagePlus className="h-7 w-7 mb-2 opacity-50" />
+                      <span className="text-sm">Haz clic para subir una imagen</span>
+                      <span className="text-xs opacity-60 mt-1">JPG, PNG, WebP o GIF · Máx. 5 MB</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Resumen */}
@@ -259,7 +296,9 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
         {showPreview && (
           <div className="w-1/2 glass-panel rounded-xl p-6 overflow-y-auto">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">Vista previa</p>
-            <div className="text-3xl mb-3">{form.emoji}</div>
+            {form.emoji.startsWith("http")
+              ? <img src={form.emoji} alt="portada" className="w-full h-44 object-cover rounded-lg mb-3" />
+              : <div className="text-3xl mb-3">{form.emoji}</div>}
             <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">{form.categoria}</div>
             <h1 className="text-2xl font-bold text-foreground mb-2">{form.titulo || "Sin título"}</h1>
             {form.resumen && <p className="text-muted-foreground text-sm mb-4 italic">{form.resumen}</p>}

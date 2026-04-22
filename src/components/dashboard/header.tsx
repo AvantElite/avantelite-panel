@@ -1,11 +1,23 @@
 import { Search } from "lucide-react"
+import type { AuthUser } from "@/components/auth/login-page"
 
-export function Header() {
+interface HeaderProps {
+  user: AuthUser
+}
+
+export function Header({ user }: HeaderProps) {
+  const initials = user.nombre
+    .split(" ")
+    .map(w => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+
   return (
     <header className="sticky top-0 z-50 flex h-20 items-center justify-between detail-header px-8">
       <div className="flex flex-col gap-0.5">
-        <h1 
-          className="neon-title text-2xl font-black tracking-tight transition-all hover:scale-[1.01]" 
+        <h1
+          className="neon-title text-2xl font-black tracking-tight transition-all hover:scale-[1.01]"
         >
           PANEL DE CONTROL
         </h1>
@@ -15,7 +27,7 @@ export function Header() {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
           </span>
           <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/80">
-            SISTEMA ACTIVO • ADMINISTRADOR
+            SISTEMA ACTIVO • {user.rol.toUpperCase()}
           </p>
         </div>
       </div>
@@ -32,12 +44,12 @@ export function Header() {
 
         <div className="flex items-center gap-3 border-l border-white/10 pl-6">
           <div className="flex flex-col items-end">
-            <p className="text-xs font-bold text-foreground">Admin Avant</p>
+            <p className="text-xs font-bold text-foreground">{user.nombre}</p>
             <p className="text-[10px] text-emerald-400 font-medium">Online</p>
           </div>
           <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-[#0057ff] to-[#00f0ff] p-[1px]">
             <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-[#0B0F19]">
-              <span className="text-sm font-black text-[#00f0ff]">AD</span>
+              <span className="text-sm font-black text-[#00f0ff]">{initials}</span>
             </div>
           </div>
         </div>

@@ -8,6 +8,12 @@ const STATUS_COLORS: Record<string, string> = {
   "Leído": "#10b981"
 }
 
+const DIFICULTAD_COLORS: Record<string, { color: string; bg: string; label: string }> = {
+  facil:   { color: "#34d399", bg: "#10b98115", label: "Fácil" },
+  medio:   { color: "#fbbf24", bg: "#f59e0b15", label: "Medio" },
+  dificil: { color: "#fb7185", bg: "#f43f5e15", label: "Difícil" },
+}
+
 export function RecentActivity({ data = [] }: { data?: any[] }) {
   return (
     <Card className="col-span-3 glass-panel">
@@ -15,7 +21,7 @@ export function RecentActivity({ data = [] }: { data?: any[] }) {
         <CardTitle className="neon-title text-lg font-bold">Actividad Reciente</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
+        <div className="space-y-6 max-h-[340px] overflow-y-auto pr-1">
           {data.map((activity, i) => {
             const statusColor = STATUS_COLORS[activity.status] || "#94a3b8"
             return (
@@ -33,12 +39,23 @@ export function RecentActivity({ data = [] }: { data?: any[] }) {
                     <span className="text-[10px] font-bold text-muted-foreground px-2 py-0.5 rounded-full bg-white/5">
                       {activity.producto}
                     </span>
-                    <span 
+                    <span
                       className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full"
                       style={{ backgroundColor: `${statusColor}20`, color: statusColor }}
                     >
                       {activity.status}
                     </span>
+                    {activity.tipo === "diy" && activity.dificultad && (() => {
+                      const d = DIFICULTAD_COLORS[activity.dificultad]
+                      return d ? (
+                        <span
+                          className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: d.bg, color: d.color }}
+                        >
+                          {d.label}
+                        </span>
+                      ) : null
+                    })()}
                   </div>
                 </div>
               </div>

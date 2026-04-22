@@ -49,7 +49,7 @@ interface AnalyticsData {
   scroll_paginas: { pagina: string; scroll: number }[]
 }
 
-const API = "http://localhost/backendavant/get_analytics.php"
+const API = "http://localhost/backendavant/api.php?r=analytics"
 
 // ─── Palettes ─────────────────────────────────────────────────────────────────
 
@@ -213,7 +213,7 @@ export function AnalyticsPage() {
   const load = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      const res  = await fetch(`${API}?range=${range}&gran=${gran}`)
+      const res  = await fetch(`${API}&range=${range}&gran=${gran}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.error) throw new Error(json.error)
