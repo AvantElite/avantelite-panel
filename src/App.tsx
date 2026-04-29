@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { api, authFetch } from "@/lib/api"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
 import { KpiCards } from "@/components/dashboard/kpi-cards"
@@ -13,57 +14,56 @@ import { AnalyticsPage } from "@/components/analytics/analytics-page"
 import { LoginPage, type AuthUser } from "@/components/auth/login-page"
 import { UsuariosPage } from "@/components/usuarios/usuarios-page"
 import { RagPage } from "@/components/rag/rag-page"
+import { Brain } from "lucide-react"
 import "./avant-premium-theme.css"
 
-const API_URL = "http://localhost/backendavant/api.php?r=contactos/stats"
+const API_URL = api("contactos/stats")
+
+export type RagToast = { state: "loading" } | { state: "done"; count: number } | null
 
 function App() {
   const [currentView, setCurrentView] = useState("Dashboard")
+  const [ragOpenId, setRagOpenId] = useState<number | null>(null)
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [ragToast, setRagToast] = useState<RagToast>(null)
+
+  const handleNavigateToRag = (id: number) => {
+    setRagOpenId(id)
+    setCurrentView("Contexto IA")
+  }
+
+  useEffect(() => {
+    if (ragToast?.state === "done") {
+      const t = setTimeout(() => setRagToast(null), 6000)
+      return () => clearTimeout(t)
+    }
+  }, [ragToast])
 
   // Auth
   const [user, setUser]           = useState<AuthUser | null>(null)
   const [authReady, setAuthReady] = useState(false)
 
   useEffect(() => {
-    const token  = localStorage.getItem("avant_token")
-    const stored = localStorage.getItem("avant_user")
-    if (token && stored) {
-      fetch("http://localhost/backendavant/api.php?r=auth/me", {
-        headers: { "X-Token": token }
-      })
-        .then(r => r.json())
-        .then(d => {
-          if (d.user) {
-            setUser(d.user)
-            if (!d.user.permisos?.includes("Dashboard")) setCurrentView("Mensajes")
-          } else {
-            localStorage.removeItem("avant_token")
-            localStorage.removeItem("avant_user")
+    fetch(api("auth/me"), { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        if (d.user) {
+          if (Array.isArray(d.user.permisos)) {
+            d.user.permisos = d.user.permisos.map((p: string) => p === "RAG" ? "Contexto IA" : p)
           }
-        })
-        .catch(() => {
-          try {
-            const u = JSON.parse(stored)
-            if (!u.permisos) {
-              u.permisos = u.rol === "administrador"
-                ? ["Dashboard","Mensajes","Historial","Blog","Analíticas","Usuarios","RAG"]
-                : ["Mensajes","Historial"]
-            }
-            setUser(u)
-          } catch { /* noop */ }
-        })
-        .finally(() => setAuthReady(true))
-    } else {
-      setAuthReady(true)
-    }
+          setUser(d.user)
+          if (!d.user.permisos?.includes("Dashboard")) setCurrentView("Mensajes")
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAuthReady(true))
   }, [])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(API_URL)
+        const response = await authFetch(API_URL)
         const json = await response.json()
         setData(json)
       } catch (error) {
@@ -77,22 +77,14 @@ function App() {
     }
   }, [currentView])
 
-  const handleLogin = (_token: string, u: AuthUser) => {
+  const handleLogin = (u: AuthUser) => {
     setUser(u)
     if (!u.permisos?.includes("Dashboard")) setCurrentView("Mensajes")
     else setCurrentView("Dashboard")
   }
 
   const handleLogout = () => {
-    const token = localStorage.getItem("avant_token")
-    if (token) {
-      fetch("http://localhost/backendavant/api.php?r=auth/logout", {
-        method: "POST",
-        headers: { "X-Token": token },
-      }).catch(() => {})
-    }
-    localStorage.removeItem("avant_token")
-    localStorage.removeItem("avant_user")
+    fetch(api("auth/logout"), { method: "POST", credentials: "include" }).catch(() => {})
     setUser(null)
   }
 
@@ -113,6 +105,17 @@ function App() {
       <Sidebar currentView={currentView} onNavigate={setCurrentView} user={user} onLogout={handleLogout} />
       <div className="flex flex-1 flex-col overflow-auto">
         <Header user={user} />
+        {/* Toast global Contexto IA */}
+        {ragToast && (
+          <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-2xl text-sm font-medium transition-all duration-300 ${ragToast.state === "loading" ? "bg-violet-950 border-violet-500/50 text-violet-200" : ragToast.count > 0 ? "bg-emerald-950 border-emerald-500/50 text-emerald-200" : "bg-zinc-900 border-zinc-700 text-zinc-300"}`}>
+            <Brain className={`h-4 w-4 shrink-0 ${ragToast.state === "loading" ? "animate-spin" : ragToast.state === "done" && ragToast.count > 0 ? "text-emerald-400" : "text-zinc-400"}`} />
+            {ragToast.state === "loading"
+              ? "Analizando conversación para Contexto IA…"
+              : ragToast.count > 0
+                ? `✓ ${ragToast.count} entrada${ragToast.count !== 1 ? "s" : ""} guardada${ragToast.count !== 1 ? "s" : ""} en Contexto IA`
+                : "Sin información nueva para Contexto IA"}
+          </div>
+        )}
         <main className="flex-1 p-6 lg:p-10">
           {loading && currentView === "Dashboard" ? (
             <div className="flex h-full items-center justify-center">
@@ -127,6 +130,10 @@ function App() {
                     nuevos={data.nuevos_contactos}
                     leidos={data.leidos_contactos}
                     tiempoRespuesta={data.tiempo_respuesta}
+                    pctTotal={data.pct_total}
+                    pctNuevos={data.pct_nuevos}
+                    pctLeidos={data.pct_leidos}
+                    pctTiempo={data.pct_tiempo}
                   />
                 </section>
 
@@ -150,13 +157,13 @@ function App() {
               </div>
             )
           )}
-          {currentView === "Mensajes" && <MensajesPage />}
+          {currentView === "Mensajes" && <MensajesPage onRagToast={setRagToast} onNavigateToRag={handleNavigateToRag} />}
           {currentView === "Historial" && <HistorialPage />}
           {currentView === "Blog" && <BlogPage />}
           {currentView === "Analíticas" && <AnalyticsPage />}
           {currentView === "Usuarios" && <UsuariosPage />}
-          {currentView === "RAG" && <RagPage />}
-          {currentView !== "Dashboard" && currentView !== "Mensajes" && currentView !== "Historial" && currentView !== "Blog" && currentView !== "Analíticas" && currentView !== "Usuarios" && currentView !== "RAG" && (
+          {currentView === "Contexto IA" && <RagPage initialId={ragOpenId} onOpen={() => setRagOpenId(null)} />}
+          {currentView !== "Dashboard" && currentView !== "Mensajes" && currentView !== "Historial" && currentView !== "Blog" && currentView !== "Analíticas" && currentView !== "Usuarios" && currentView !== "Contexto IA" && (
             <div className="flex h-full items-center justify-center text-muted-foreground">
               <p>La vista "{currentView}" está en desarrollo.</p>
             </div>

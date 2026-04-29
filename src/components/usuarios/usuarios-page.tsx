@@ -1,16 +1,17 @@
-import { useState, useEffect, useRef } from "react"
-import { createPortal } from "react-dom"
-import { Shield, Wrench, KeyRound, Trash2, ChevronDown, Check, X, LogOut, Plus, Settings2, LayoutDashboard, MessageSquare, History, BookOpen, BarChart2, Users, UserPlus } from "lucide-react"
+import { useState, useEffect } from "react"
+import { api } from "@/lib/api"
+import { Shield, Wrench, KeyRound, Trash2, ChevronDown, Check, X, LogOut, Plus, Settings2, LayoutDashboard, MessageSquare, History, BookOpen, BarChart2, Users, UserPlus, Brain } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const ALL_VIEWS = ["Dashboard", "Mensajes", "Historial", "Blog", "Analíticas", "Usuarios"]
+const ALL_VIEWS = ["Dashboard", "Mensajes", "Historial", "Blog", "Analíticas", "Usuarios", "Contexto IA"]
 const VIEW_ICONS: Record<string, React.ReactNode> = {
-  Dashboard:  <LayoutDashboard className="h-3.5 w-3.5" />,
-  Mensajes:   <MessageSquare   className="h-3.5 w-3.5" />,
-  Historial:  <History         className="h-3.5 w-3.5" />,
-  Blog:       <BookOpen        className="h-3.5 w-3.5" />,
-  "Analíticas": <BarChart2     className="h-3.5 w-3.5" />,
-  Usuarios:   <Users           className="h-3.5 w-3.5" />,
+  Dashboard:     <LayoutDashboard className="h-3.5 w-3.5" />,
+  Mensajes:      <MessageSquare   className="h-3.5 w-3.5" />,
+  Historial:     <History         className="h-3.5 w-3.5" />,
+  Blog:          <BookOpen        className="h-3.5 w-3.5" />,
+  "Analíticas":  <BarChart2       className="h-3.5 w-3.5" />,
+  Usuarios:      <Users           className="h-3.5 w-3.5" />,
+  "Contexto IA": <Brain           className="h-3.5 w-3.5" />,
 }
 
 interface Usuario {
@@ -27,10 +28,6 @@ interface Rol {
   permisos: string[]
 }
 
-function authHeaders() {
-  const token = localStorage.getItem("avant_token") ?? ""
-  return { "Content-Type": "application/json", "X-Token": token }
-}
 
 function rolColor(nombre: string) {
   if (nombre === "administrador") return "cyan"
@@ -69,77 +66,6 @@ function RolIconBg(nombre: string) {
   return map[c] ?? map.violet
 }
 
-function RolDropdown({ usuario, roles, open, onToggle, onSelect }: {
-  usuario: Usuario
-  roles: Rol[]
-  open: boolean
-  onToggle: () => void
-  onSelect: (r: string) => void
-}) {
-  const btnRef = useRef<HTMLButtonElement>(null)
-  const [pos, setPos] = useState({ top: 0, left: 0 })
-
-  useEffect(() => {
-    if (open && btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + window.scrollY + 6, left: r.left + window.scrollX })
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return
-    const close = () => onToggle()
-    document.addEventListener("mousedown", close)
-    return () => document.removeEventListener("mousedown", close)
-  }, [open, onToggle])
-
-  return (
-    <div>
-      <button
-        ref={btnRef}
-        onClick={e => { e.stopPropagation(); onToggle() }}
-        className={cn("flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 shadow-sm", RolBadgeStyle(usuario.rol))}
-      >
-        {usuario.rol === "administrador" ? <Shield className="h-3 w-3 shrink-0" /> : <Wrench className="h-3 w-3 shrink-0" />}
-        {usuario.rol.charAt(0).toUpperCase() + usuario.rol.slice(1)}
-        <ChevronDown className={cn("h-3 w-3 ml-auto transition-transform duration-200", open && "rotate-180")} />
-      </button>
-
-      {open && createPortal(
-        <div
-          onMouseDown={e => e.stopPropagation()}
-          style={{ position: "absolute", top: pos.top, left: pos.left, zIndex: 9999 }}
-          className="w-52 rounded-xl border border-border/60 bg-card/95 backdrop-blur-sm shadow-2xl overflow-hidden"
-        >
-          <div className="p-1">
-            {roles.map(r => (
-              <button
-                key={r.id}
-                onClick={() => onSelect(r.nombre)}
-                className={cn(
-                  "flex items-center gap-2.5 w-full px-3 py-2.5 text-xs rounded-lg transition-all duration-150",
-                  usuario.rol === r.nombre
-                    ? cn(RolIconBg(r.nombre), "font-semibold")
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                )}
-              >
-                <span className={cn("flex h-6 w-6 items-center justify-center rounded-md shrink-0", RolIconBg(r.nombre))}>
-                  {r.nombre === "administrador" ? <Shield className="h-3 w-3" /> : <Wrench className="h-3 w-3" />}
-                </span>
-                <div className="text-left">
-                  <p className="font-medium">{r.nombre.charAt(0).toUpperCase() + r.nombre.slice(1)}</p>
-                  <p className="text-[10px] opacity-60">{r.permisos.length} sección{r.permisos.length !== 1 ? "es" : ""}</p>
-                </div>
-                {usuario.rol === r.nombre && <Check className="h-3 w-3 ml-auto" />}
-              </button>
-            ))}
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  )
-}
 
 export function UsuariosPage() {
   const [tab, setTab]               = useState<"usuarios" | "roles">("usuarios")
@@ -152,9 +78,6 @@ export function UsuariosPage() {
   const [pwId, setPwId]             = useState<number | null>(null)
   const [pwValue, setPwValue]       = useState("")
   const [pwLoading, setPwLoading]   = useState(false)
-
-  // Rol dropdown
-  const [rolId, setRolId]           = useState<number | null>(null)
 
   // Crear usuario
   const [showNewUser, setShowNewUser]   = useState(false)
@@ -179,11 +102,11 @@ export function UsuariosPage() {
   const fetchAll = () => {
     setLoading(true)
     Promise.all([
-      fetch("http://localhost/backendavant/api.php?r=auth/usuarios", { headers: authHeaders() }).then(r => r.json()),
-      fetch("http://localhost/backendavant/api.php?r=roles/listar",   { headers: authHeaders() }).then(r => r.json()),
+      fetch(api("auth/usuarios"), { credentials: "include" }).then(r => r.json()),
+      fetch(api("roles/listar"),   { credentials: "include" }).then(r => r.json()),
     ]).then(([u, r]) => {
       setUsuarios(Array.isArray(u) ? u : [])
-      setRoles(Array.isArray(r) ? r : [])
+      setRoles(Array.isArray(r) ? r.map((rol: Rol) => ({ ...rol, permisos: rol.permisos.map(p => p === "RAG" ? "Contexto IA" : p) })) : [])
       setLoading(false)
     }).catch(() => setLoading(false))
   }
@@ -191,20 +114,19 @@ export function UsuariosPage() {
   useEffect(() => { fetchAll() }, [])
 
   const handleRol = async (id: number, rol: string) => {
-    const res  = await fetch("http://localhost/backendavant/api.php?r=auth/usuarios/rol", {
-      method: "POST", headers: authHeaders(), body: JSON.stringify({ id, rol })
+    const res  = await fetch(api("auth/usuarios/rol"), {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, rol })
     })
     const data = await res.json()
     if (data.success) { setUsuarios(prev => prev.map(u => u.id === id ? { ...u, rol } : u)); toast(true, "Rol actualizado.") }
     else toast(false, data.error ?? "Error al cambiar rol.")
-    setRolId(null)
   }
 
   const handlePassword = async (id: number) => {
-    if (pwValue.length < 6) { toast(false, "Mínimo 6 caracteres."); return }
+    if (pwValue.length < 8) { toast(false, "Mínimo 8 caracteres."); return }
     setPwLoading(true)
-    const res  = await fetch("http://localhost/backendavant/api.php?r=auth/usuarios/password", {
-      method: "POST", headers: authHeaders(), body: JSON.stringify({ id, password: pwValue })
+    const res  = await fetch(api("auth/usuarios/password"), {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, password: pwValue })
     })
     const data = await res.json()
     if (data.success) { toast(true, "Contraseña actualizada."); setPwId(null); setPwValue("") }
@@ -214,8 +136,8 @@ export function UsuariosPage() {
 
   const handleBorrarSesion = async (id: number, nombre: string) => {
     if (!confirm(`¿Cerrar la sesión activa de "${nombre}"?`)) return
-    const res  = await fetch("http://localhost/backendavant/api.php?r=auth/usuarios/sesion", {
-      method: "POST", headers: authHeaders(), body: JSON.stringify({ id })
+    const res  = await fetch(api("auth/usuarios/sesion"), {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id })
     })
     const data = await res.json()
     if (data.success) toast(true, `Sesión de "${nombre}" cerrada.`)
@@ -224,8 +146,8 @@ export function UsuariosPage() {
 
   const handleEliminar = async (id: number, nombre: string) => {
     if (!confirm(`¿Eliminar la cuenta de "${nombre}"? Esta acción no se puede deshacer.`)) return
-    const res  = await fetch("http://localhost/backendavant/api.php?r=auth/usuarios/eliminar", {
-      method: "POST", headers: authHeaders(), body: JSON.stringify({ id })
+    const res  = await fetch(api("auth/usuarios/eliminar"), {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id })
     })
     const data = await res.json()
     if (data.success) { setUsuarios(prev => prev.filter(u => u.id !== id)); toast(true, "Cuenta eliminada.") }
@@ -235,8 +157,8 @@ export function UsuariosPage() {
   const handleCrearRol = async () => {
     if (!newRolNombre.trim()) { toast(false, "El nombre es obligatorio."); return }
     setRolSaving(true)
-    const res  = await fetch("http://localhost/backendavant/api.php?r=roles/crear", {
-      method: "POST", headers: authHeaders(), body: JSON.stringify({ nombre: newRolNombre.trim(), permisos: newRolPermisos })
+    const res  = await fetch(api("roles/crear"), {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre: newRolNombre.trim(), permisos: newRolPermisos })
     })
     const data = await res.json()
     if (data.success) {
@@ -249,8 +171,8 @@ export function UsuariosPage() {
 
   const handleGuardarRol = async (rol: Rol) => {
     setRolSaving(true)
-    const res  = await fetch("http://localhost/backendavant/api.php?r=roles/actualizar", {
-      method: "POST", headers: authHeaders(), body: JSON.stringify({ id: rol.id, permisos: rol.permisos })
+    const res  = await fetch(api("roles/actualizar"), {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: rol.id, permisos: rol.permisos })
     })
     const data = await res.json()
     if (data.success) { toast(true, "Permisos actualizados."); setEditRol(null); fetchAll() }
@@ -261,11 +183,11 @@ export function UsuariosPage() {
   const handleCrearUsuario = async () => {
     if (!newNombre.trim()) { toast(false, "El nombre es obligatorio."); return }
     if (!newEmail.trim())  { toast(false, "El email es obligatorio."); return }
-    if (newPassword.length < 6) { toast(false, "Mínimo 6 caracteres en la contraseña."); return }
+    if (newPassword.length < 8) { toast(false, "Mínimo 8 caracteres en la contraseña."); return }
     if (!newRol) { toast(false, "Selecciona un rol."); return }
     setNewUserLoading(true)
-    const res  = await fetch("http://localhost/backendavant/api.php?r=auth/register", {
-      method: "POST", headers: authHeaders(),
+    const res  = await fetch(api("auth/register"), {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nombre: newNombre.trim(), email: newEmail.trim(), password: newPassword, rol: newRol })
     })
     const data = await res.json()
@@ -279,8 +201,8 @@ export function UsuariosPage() {
 
   const handleEliminarRol = async (rol: Rol) => {
     if (!confirm(`¿Eliminar el rol "${rol.nombre}"?`)) return
-    const res  = await fetch("http://localhost/backendavant/api.php?r=roles/eliminar", {
-      method: "POST", headers: authHeaders(), body: JSON.stringify({ id: rol.id })
+    const res  = await fetch(api("roles/eliminar"), {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: rol.id })
     })
     const data = await res.json()
     if (data.success) { toast(true, "Rol eliminado."); fetchAll() }
@@ -333,16 +255,19 @@ export function UsuariosPage() {
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Nombre</label>
                   <input value={newNombre} onChange={e => setNewNombre(e.target.value)} placeholder="Nombre completo"
+                    maxLength={100}
                     className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Email</label>
                   <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@ejemplo.com"
+                    maxLength={254}
                     className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Contraseña</label>
-                  <input type="password" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mín. 6 caracteres"
+                  <input type="password" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mín. 8 caracteres"
+                    maxLength={128}
                     className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
                 </div>
                 <div>
@@ -397,12 +322,26 @@ export function UsuariosPage() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground truncate">{u.email}</p>
-                <RolDropdown
-                  usuario={u} roles={roles}
-                  open={rolId === u.id}
-                  onToggle={() => setRolId(rolId === u.id ? null : u.id)}
-                  onSelect={(r) => handleRol(u.id, r)}
-                />
+                <div className="relative">
+                  <select
+                    value={u.rol}
+                    onChange={e => handleRol(u.id, e.target.value)}
+                    className={cn(
+                      "appearance-none rounded-full pl-7 pr-6 py-1.5 text-xs font-semibold border cursor-pointer transition-all duration-200 shadow-sm bg-transparent outline-none",
+                      RolBadgeStyle(u.rol)
+                    )}
+                  >
+                    {roles.map(r => (
+                      <option key={r.id} value={r.nombre} className="bg-[#0B0F19] text-foreground">
+                        {r.nombre.charAt(0).toUpperCase() + r.nombre.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2">
+                    {u.rol === "administrador" ? <Shield className="h-3 w-3" /> : <Wrench className="h-3 w-3" />}
+                  </span>
+                  <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 opacity-60" />
+                </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => { setPwId(pwId === u.id ? null : u.id); setPwValue("") }} title="Cambiar contraseña" className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
                     <KeyRound className="h-4 w-4" />
@@ -422,8 +361,9 @@ export function UsuariosPage() {
                     type="password"
                     value={pwValue}
                     onChange={e => setPwValue(e.target.value)}
-                    placeholder="Nueva contraseña (mín. 6 caracteres)"
+                    placeholder="Nueva contraseña (mín. 8 caracteres)"
                     autoComplete="new-password"
+                    maxLength={128}
                     className="h-9 flex-1 max-w-xs rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     onKeyDown={e => e.key === "Enter" && handlePassword(u.id)}
                   />
@@ -529,7 +469,8 @@ export function UsuariosPage() {
                 value={newRolNombre}
                 onChange={e => setNewRolNombre(e.target.value)}
                 placeholder="Nombre del rol"
-                className="h-9 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                maxLength={50}
+              className="h-9 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
               <div className="flex flex-wrap gap-2">
                 {ALL_VIEWS.map(view => {

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
+import { api, authFetch } from "@/lib/api"
 import { PlusCircle, Edit2, Trash2, Eye, CheckCircle2, XCircle, Calendar, Tag, Search, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { BlogPost } from "@/types/blog"
 import { BlogEditor } from "./blog-editor"
 import { BlogPreview } from "./blog-preview"
 
-const API_URL = "http://localhost/backendavant/api.php?r=blog&panel=1"
+const API_URL = `${api("blog")}?panel=1`
 
 export function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([])
@@ -20,7 +21,7 @@ export function BlogPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(API_URL)
+      const res = await authFetch(API_URL)
       if (!res.ok) throw new Error("Error de conexión")
       const data = await res.json()
       if (data.error) throw new Error(data.error)
@@ -39,7 +40,7 @@ export function BlogPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("¿Eliminar esta publicación? Esta acción no se puede deshacer.")) return
     try {
-      const res = await fetch(API_URL, {
+      const res = await authFetch(API_URL, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
@@ -54,7 +55,7 @@ export function BlogPage() {
 
   const handleTogglePublish = async (post: BlogPost) => {
     try {
-      const res = await fetch(API_URL, {
+      const res = await authFetch(API_URL, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...post, publicado: !post.publicado }),
@@ -70,7 +71,7 @@ export function BlogPage() {
   const handleSave = async (draft: Omit<BlogPost, "id" | "creado_en" | "actualizado">, id?: number) => {
     const method = id ? "PUT" : "POST"
     const body = id ? { ...draft, id } : draft
-    const res = await fetch(API_URL, {
+    const res = await authFetch(API_URL, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

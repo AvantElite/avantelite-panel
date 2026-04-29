@@ -2,15 +2,30 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { TrendingUp, TrendingDown, Users, AlertCircle, MessageSquare, CheckCircle } from "lucide-react"
 import { LineChart, Line, ResponsiveContainer } from "recharts"
 
-export function KpiCards({ total = 0, nuevos = 0, leidos = 0, tiempoRespuesta }: { total?: number; nuevos?: number; leidos?: number; tiempoRespuesta?: string | null }) {
+function fmtPct(val: number | null | undefined, invert = false): { label: string; trend: "up" | "down" | "neutral" } {
+  if (val === null || val === undefined) return { label: "—", trend: "neutral" }
+  const sign = val >= 0 ? "+" : ""
+  const trend = invert ? (val <= 0 ? "up" : "down") : (val >= 0 ? "up" : "down")
+  return { label: `${sign}${val}%`, trend }
+}
+
+export function KpiCards({ total = 0, nuevos = 0, leidos = 0, tiempoRespuesta, pctTotal, pctNuevos, pctLeidos, pctTiempo }: {
+  total?: number; nuevos?: number; leidos?: number; tiempoRespuesta?: string | null
+  pctTotal?: number | null; pctNuevos?: number | null; pctLeidos?: number | null; pctTiempo?: number | null
+}) {
   const percentageLeidos = total > 0 ? Math.round((leidos / total) * 100) : 0;
+
+  const p0 = fmtPct(pctTotal)
+  const p1 = fmtPct(pctNuevos)
+  const p2 = fmtPct(pctTiempo, true)
+  const p3 = fmtPct(pctLeidos)
 
   const kpis = [
     {
       title: "Mensajes Totales",
       value: total.toLocaleString(),
-      change: "+12.5%",
-      trend: "up" as const,
+      change: p0.label,
+      trend: p0.trend,
       icon: MessageSquare,
       color: "#00f0ff",
       data: [{ v: 30 }, { v: 40 }, { v: 35 }, { v: 50 }, { v: 45 }, { v: 60 }, { v: 55 }]
@@ -18,8 +33,8 @@ export function KpiCards({ total = 0, nuevos = 0, leidos = 0, tiempoRespuesta }:
     {
       title: "Nuevos Contactos",
       value: nuevos.toLocaleString(),
-      change: "+8.2%",
-      trend: "up" as const,
+      change: p1.label,
+      trend: p1.trend,
       icon: Users,
       color: "#0057ff",
       data: [{ v: 20 }, { v: 25 }, { v: 22 }, { v: 30 }, { v: 28 }, { v: 35 }, { v: 32 }]
@@ -27,8 +42,8 @@ export function KpiCards({ total = 0, nuevos = 0, leidos = 0, tiempoRespuesta }:
     {
       title: "Tiempo de Respuesta",
       value: tiempoRespuesta ?? "—",
-      change: "-15%",
-      trend: "down" as const,
+      change: p2.label,
+      trend: p2.trend,
       icon: AlertCircle,
       color: "#ec4899",
       data: [{ v: 50 }, { v: 45 }, { v: 48 }, { v: 40 }, { v: 42 }, { v: 35 }, { v: 38 }]
@@ -36,8 +51,8 @@ export function KpiCards({ total = 0, nuevos = 0, leidos = 0, tiempoRespuesta }:
     {
       title: "Casos Leídos",
       value: `${percentageLeidos}%`,
-      change: "+2.4%",
-      trend: "up" as const,
+      change: p3.label,
+      trend: p3.trend,
       icon: CheckCircle,
       color: "#10b981",
       data: [{ v: 80 }, { v: 82 }, { v: 85 }, { v: 83 }, { v: 88 }, { v: 90 }, { v: 92 }]
@@ -61,10 +76,10 @@ export function KpiCards({ total = 0, nuevos = 0, leidos = 0, tiempoRespuesta }:
                 <p className="mt-1 flex items-center gap-1 text-xs">
                   {kpi.trend === "up" ? (
                     <TrendingUp className="h-3 w-3 text-emerald-500" />
-                  ) : (
+                  ) : kpi.trend === "down" ? (
                     <TrendingDown className="h-3 w-3 text-red-500" />
-                  )}
-                  <span className={kpi.trend === "up" ? "text-emerald-500" : "text-rose-500"}>
+                  ) : null}
+                  <span className={kpi.trend === "up" ? "text-emerald-500" : kpi.trend === "down" ? "text-rose-500" : "text-muted-foreground"}>
                     {kpi.change}
                   </span>{" "}
                   <span className="text-muted-foreground/60">vs mes anterior</span>

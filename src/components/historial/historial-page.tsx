@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import { api, authFetch } from "@/lib/api"
 import { Search, MessageCircle, Tag, X, Plus, ChevronDown, ChevronUp, Lock, Clock, User, Mail } from "lucide-react"
 import { cn } from "@/lib/utils"
 import "../../avant-premium-theme.css"
@@ -55,7 +56,7 @@ export function HistorialPage() {
   const tagInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetch("http://localhost/backendavant/api.php?r=chat/historial")
+    authFetch(api("chat/historial"))
       .then(r => r.json())
       .then(data => { setConvs(data); setLoading(false) })
       .catch(() => setLoading(false))
@@ -79,7 +80,7 @@ export function HistorialPage() {
     setExpanded(token)
     if (mensajes[token]) return
     setLoadingMsgs(token)
-    const r = await fetch(`http://localhost/backendavant/api.php?r=chat&token=${encodeURIComponent(token)}`)
+    const r = await authFetch(`${api("chat")}?token=${encodeURIComponent(token)}`)
     const data = await r.json()
     setMensajes(prev => ({ ...prev, [token]: data.mensajes ?? data }))
     setLoadingMsgs(null)
@@ -102,7 +103,7 @@ export function HistorialPage() {
   }
 
   const saveEtiquetas = async (token: string, etiquetas: string[]) => {
-    const res = await fetch("http://localhost/backendavant/api.php?r=chat/etiquetas", {
+    const res = await authFetch(api("chat/etiquetas"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, etiquetas })

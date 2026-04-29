@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import { api, authFetch } from "@/lib/api"
 import { ArrowLeft, Save, Eye, EyeOff, BookOpen, AlertCircle, ImagePlus, X } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -52,7 +53,7 @@ export function BlogEditor({ post, onSave, onCancel }: BlogEditorProps) {
     const fd = new FormData()
     fd.append("imagen", file)
     try {
-      const res = await fetch("http://localhost/backendavant/api.php?r=blog/upload-imagen", { method: "POST", body: fd })
+      const res = await authFetch(api("blog/upload-imagen"), { method: "POST", body: fd as unknown as BodyInit })
       const data = await res.json()
       if (data.url) setForm(p => ({ ...p, emoji: data.url }))
       else setSaveError(data.error ?? "Error al subir la imagen.")

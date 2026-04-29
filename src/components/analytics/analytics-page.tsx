@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
+import { api, authFetch } from "@/lib/api"
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -49,7 +50,7 @@ interface AnalyticsData {
   scroll_paginas: { pagina: string; scroll: number }[]
 }
 
-const API = "http://localhost/backendavant/api.php?r=analytics"
+const API = api("analytics")
 
 // ─── Palettes ─────────────────────────────────────────────────────────────────
 
@@ -80,10 +81,11 @@ const tooltipStyle = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmtTime(s: number) {
-  if (!s) return "—"
-  if (s < 60) return `${s}s`
-  return `${Math.floor(s / 60)}m ${s % 60}s`
+function fmtTime(s: number | null | undefined) {
+  if (s == null || s === 0) return "—"
+  const n = Math.round(s)
+  if (n < 60) return `${n}s`
+  return `${Math.floor(n / 60)}m ${n % 60}s`
 }
 
 function trendColor(v: number | null, inverse = false) {
@@ -138,15 +140,6 @@ function KpiCard({
   )
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 mb-4">
-      <div className="h-px flex-1 bg-white/[0.06]" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50">{children}</span>
-      <div className="h-px flex-1 bg-white/[0.06]" />
-    </div>
-  )
-}
 
 // Custom dot para anomalías
 function AnomalyDot(props: any) {
@@ -213,7 +206,7 @@ export function AnalyticsPage() {
   const load = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      const res  = await fetch(`${API}&range=${range}&gran=${gran}`)
+      const res  = await authFetch(`${API}?range=${range}&gran=${gran}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.error) throw new Error(json.error)
@@ -360,7 +353,7 @@ export function AnalyticsPage() {
           sub="por página" icon={Clock} color={C.purple} kpi={kpis.tiempo_medio} />
         <KpiCard title="Págs/sesión" value={kpis.paginas_sesion.curr.toFixed(1)}
           sub="navegación media" icon={Layers} color={C.green} kpi={kpis.paginas_sesion} />
-        <KpiCard title="Scroll medio" value={`${kpis.scroll_medio}%`}
+        <KpiCard title="Scroll medio" value={kpis.scroll_medio != null ? `${kpis.scroll_medio}%` : "—"}
           sub="profundidad de lectura" icon={Activity} color={C.pink} />
       </div>
 
@@ -525,7 +518,7 @@ export function AnalyticsPage() {
                                 <Cell key={i} fill={fuentesColors[f.name] ?? PIE_COLORS[i % PIE_COLORS.length]} stroke="transparent" />
                               ))}
                             </Pie>
-                            <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "Sesiones"]} />
+                            <Tooltip {...tooltipStyle} formatter={(v) => [v, "Sesiones"]} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -638,7 +631,7 @@ export function AnalyticsPage() {
                               <Cell key={i} fill={PIE_COLORS[i]} stroke="transparent" />
                             ))}
                           </Pie>
-                          <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "Sesiones"]} />
+                          <Tooltip {...tooltipStyle} formatter={(v) => [v, "Sesiones"]} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
@@ -690,7 +683,7 @@ export function AnalyticsPage() {
                           tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} />
                         <YAxis dataKey="name" type="category" axisLine={false} tickLine={false}
                           tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} width={55} />
-                        <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "Sesiones"]} />
+                        <Tooltip {...tooltipStyle} formatter={(v) => [v, "Sesiones"]} />
                         <Bar dataKey="value" name="Sesiones" radius={[0, 5, 5, 0]} maxBarSize={16}>
                           {data.navegadores.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                         </Bar>
@@ -820,9 +813,9 @@ export function AnalyticsPage() {
                             <td className="py-3">
                               <div className="flex items-center gap-2">
                                 <div className="h-1.5 w-16 rounded-full bg-white/[0.06] overflow-hidden">
-                                  <div className="h-full rounded-full" style={{ width: `${p.scroll_medio}%`, backgroundColor: C.cyan }} />
+                                  <div className="h-full rounded-full" style={{ width: `${p.scroll_medio ?? 0}%`, backgroundColor: C.cyan }} />
                                 </div>
-                                <span className="text-xs text-muted-foreground">{p.scroll_medio}%</span>
+                                <span className="text-xs text-muted-foreground">{p.scroll_medio != null ? `${p.scroll_medio}%` : "—"}</span>
                               </div>
                             </td>
                           </tr>
@@ -914,7 +907,7 @@ export function AnalyticsPage() {
                           tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
                           interval={Math.max(0, Math.floor(data.eventos_tiempo.length / 6) - 1)} />
                         <YAxis axisLine={false} tickLine={false} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} />
-                        <Tooltip {...tooltipStyle} formatter={(v: number, k: string) => [v, eventLabels[k] ?? k]} />
+                        <Tooltip {...tooltipStyle} formatter={(v, k) => [v, eventLabels[String(k)] ?? k]} />
                         <Legend wrapperStyle={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }} formatter={(v) => eventLabels[v] ?? v} />
                         {allEventTypes.map(et => (
                           <Bar key={et} dataKey={et} stackId="a"

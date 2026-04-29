@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Eye, EyeOff, UserPlus } from "lucide-react"
+import { api, authFetch } from "@/lib/api"
 
 interface Props {
   onGoLogin: () => void
@@ -23,7 +24,7 @@ export function RegisterPage({ onGoLogin, onRegistered }: Props) {
     if (password.length < 6)  { setError("La contraseña debe tener al menos 6 caracteres."); return }
     setLoading(true)
     try {
-      const res  = await fetch("http://localhost/backendavant/api.php?r=auth/register", {
+      const res  = await authFetch(api("auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nombre, email, password, rol }),
@@ -45,7 +46,7 @@ export function RegisterPage({ onGoLogin, onRegistered }: Props) {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <img src="/src/assets/logo.svg" alt="AvantService" className="h-12 w-12 mb-3" />
+          <img src="/logo.svg" alt="AvantService" className="h-12 w-12 mb-3" />
           <h1 className="text-2xl font-bold"><span className="neon-title">Avant</span>Panel</h1>
           <p className="text-sm text-muted-foreground mt-1">Panel de administración</p>
         </div>
