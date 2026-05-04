@@ -205,3 +205,40 @@
 .blog-markdown th { background: rgba(0,240,255,0.07); color: var(--foreground); font-weight: 600; padding: 0.6rem 0.75rem; text-align: left; border: 1px solid rgba(255,255,255,0.08); }
 .blog-markdown td { padding: 0.5rem 0.75rem; border: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
 .blog-markdown tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* Utility classes for form fields */
+.label-xs {
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground, #94a3b8);
+}
+
+.input-base {
+    height: 2.25rem;
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    color: var(--foreground, #e2e8f0);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input-base:focus {
+    border-color: rgba(0, 240, 255, 0.4);
+    box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.2);
+}
+
+textarea.input-base {
+    height: auto;
+    padding: 0.5rem 0.75rem;
+}
+
+select.input-base option {
+    background: #0B0F19;
+    color: #e2e8f0;
+}

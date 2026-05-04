@@ -14,6 +14,7 @@ import { AnalyticsPage } from "@/components/analytics/analytics-page"
 import { LoginPage, type AuthUser } from "@/components/auth/login-page"
 import { UsuariosPage } from "@/components/usuarios/usuarios-page"
 import { RagPage } from "@/components/rag/rag-page"
+import { ServiciosPage } from "@/components/servicios/servicios-page"
 import { Brain } from "lucide-react"
 import "./avant-premium-theme.css"
 
@@ -163,6 +164,7 @@ function App() {
           {currentView === "Analíticas" && <AnalyticsPage />}
           {currentView === "Usuarios" && <UsuariosPage />}
           {currentView === "Contexto IA" && <RagPage initialId={ragOpenId} onOpen={() => setRagOpenId(null)} />}
+          {currentView === "Servicios" && <ServiciosPage />}
           {currentView !== "Dashboard" && currentView !== "Mensajes" && currentView !== "Historial" && currentView !== "Blog" && currentView !== "Analíticas" && currentView !== "Usuarios" && currentView !== "Contexto IA" && (
             <div className="flex h-full items-center justify-center text-muted-foreground">
               <p>La vista "{currentView}" está en desarrollo.</p>

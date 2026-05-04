@@ -8,6 +8,7 @@ import {
   UserCircle,
   Users,
   Brain,
+  Wrench,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { AuthUser } from "@/components/auth/login-page"
@@ -17,6 +18,7 @@ const ALL_NAV = [
   { name: "Mensajes",   icon: MessageSquare   },
   { name: "Historial",  icon: History         },
   { name: "Blog",       icon: BookOpen        },
+  { name: "Servicios",  icon: Wrench          },
   { name: "Analíticas", icon: BarChart2       },
   { name: "Usuarios",   icon: Users           },
   { name: "Contexto IA", icon: Brain           },
