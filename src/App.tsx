@@ -54,7 +54,8 @@ function App() {
             d.user.permisos = d.user.permisos.map((p: string) => p === "RAG" ? "Contexto IA" : p)
           }
           setUser(d.user)
-          if (!d.user.permisos?.includes("Dashboard")) setCurrentView("Mensajes")
+          const permisos = d.user.permisos ?? []
+          setCurrentView(permisos[0] ?? "")
         }
       })
       .catch(() => {})
@@ -80,8 +81,7 @@ function App() {
 
   const handleLogin = (u: AuthUser) => {
     setUser(u)
-    if (!u.permisos?.includes("Dashboard")) setCurrentView("Mensajes")
-    else setCurrentView("Dashboard")
+    setCurrentView(u.permisos?.[0] ?? "")
   }
 
   const handleLogout = () => {
@@ -165,9 +165,9 @@ function App() {
           {currentView === "Usuarios" && <UsuariosPage />}
           {currentView === "Contexto IA" && <RagPage initialId={ragOpenId} onOpen={() => setRagOpenId(null)} />}
           {currentView === "Servicios" && <ServiciosPage />}
-          {currentView !== "Dashboard" && currentView !== "Mensajes" && currentView !== "Historial" && currentView !== "Blog" && currentView !== "Analíticas" && currentView !== "Usuarios" && currentView !== "Contexto IA" && (
+          {currentView !== "Dashboard" && currentView !== "Mensajes" && currentView !== "Historial" && currentView !== "Blog" && currentView !== "Analíticas" && currentView !== "Usuarios" && currentView !== "Contexto IA" && currentView !== "Servicios" && (
             <div className="flex h-full items-center justify-center text-muted-foreground">
-              <p>La vista "{currentView}" está en desarrollo.</p>
+              <p>{currentView === "" ? "No tienes permisos para acceder a este panel." : `La vista "${currentView}" está en desarrollo.`}</p>
             </div>
           )}
         </main>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { api } from "@/lib/api"
+import { api, authFetch } from "@/lib/api"
 import { Shield, Wrench, KeyRound, Trash2, ChevronDown, Check, X, LogOut, Plus, Settings2, LayoutDashboard, MessageSquare, History, BookOpen, BarChart2, Users, UserPlus, Brain } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -114,8 +114,8 @@ export function UsuariosPage() {
   useEffect(() => { fetchAll() }, [])
 
   const handleRol = async (id: number, rol: string) => {
-    const res  = await fetch(api("auth/usuarios/rol"), {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, rol })
+    const res  = await authFetch(api("auth/usuarios/rol"), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, rol })
     })
     const data = await res.json()
     if (data.success) { setUsuarios(prev => prev.map(u => u.id === id ? { ...u, rol } : u)); toast(true, "Rol actualizado.") }
@@ -123,10 +123,10 @@ export function UsuariosPage() {
   }
 
   const handlePassword = async (id: number) => {
-    if (pwValue.length < 8) { toast(false, "Mínimo 8 caracteres."); return }
+    if (pwValue.length < 12) { toast(false, "Mínimo 12 caracteres."); return }
     setPwLoading(true)
-    const res  = await fetch(api("auth/usuarios/password"), {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, password: pwValue })
+    const res  = await authFetch(api("auth/usuarios/password"), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, password: pwValue })
     })
     const data = await res.json()
     if (data.success) { toast(true, "Contraseña actualizada."); setPwId(null); setPwValue("") }
@@ -136,8 +136,8 @@ export function UsuariosPage() {
 
   const handleBorrarSesion = async (id: number, nombre: string) => {
     if (!confirm(`¿Cerrar la sesión activa de "${nombre}"?`)) return
-    const res  = await fetch(api("auth/usuarios/sesion"), {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id })
+    const res  = await authFetch(api("auth/usuarios/sesion"), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id })
     })
     const data = await res.json()
     if (data.success) toast(true, `Sesión de "${nombre}" cerrada.`)
@@ -146,8 +146,8 @@ export function UsuariosPage() {
 
   const handleEliminar = async (id: number, nombre: string) => {
     if (!confirm(`¿Eliminar la cuenta de "${nombre}"? Esta acción no se puede deshacer.`)) return
-    const res  = await fetch(api("auth/usuarios/eliminar"), {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id })
+    const res  = await authFetch(api("auth/usuarios/eliminar"), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id })
     })
     const data = await res.json()
     if (data.success) { setUsuarios(prev => prev.filter(u => u.id !== id)); toast(true, "Cuenta eliminada.") }
@@ -157,8 +157,8 @@ export function UsuariosPage() {
   const handleCrearRol = async () => {
     if (!newRolNombre.trim()) { toast(false, "El nombre es obligatorio."); return }
     setRolSaving(true)
-    const res  = await fetch(api("roles/crear"), {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre: newRolNombre.trim(), permisos: newRolPermisos })
+    const res  = await authFetch(api("roles/crear"), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre: newRolNombre.trim(), permisos: newRolPermisos })
     })
     const data = await res.json()
     if (data.success) {
@@ -171,8 +171,8 @@ export function UsuariosPage() {
 
   const handleGuardarRol = async (rol: Rol) => {
     setRolSaving(true)
-    const res  = await fetch(api("roles/actualizar"), {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: rol.id, permisos: rol.permisos })
+    const res  = await authFetch(api("roles/actualizar"), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: rol.id, permisos: rol.permisos })
     })
     const data = await res.json()
     if (data.success) { toast(true, "Permisos actualizados."); setEditRol(null); fetchAll() }
@@ -183,11 +183,11 @@ export function UsuariosPage() {
   const handleCrearUsuario = async () => {
     if (!newNombre.trim()) { toast(false, "El nombre es obligatorio."); return }
     if (!newEmail.trim())  { toast(false, "El email es obligatorio."); return }
-    if (newPassword.length < 8) { toast(false, "Mínimo 8 caracteres en la contraseña."); return }
+    if (newPassword.length < 12) { toast(false, "Mínimo 12 caracteres en la contraseña."); return }
     if (!newRol) { toast(false, "Selecciona un rol."); return }
     setNewUserLoading(true)
-    const res  = await fetch(api("auth/register"), {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+    const res  = await authFetch(api("auth/register"), {
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nombre: newNombre.trim(), email: newEmail.trim(), password: newPassword, rol: newRol })
     })
     const data = await res.json()
@@ -201,8 +201,8 @@ export function UsuariosPage() {
 
   const handleEliminarRol = async (rol: Rol) => {
     if (!confirm(`¿Eliminar el rol "${rol.nombre}"?`)) return
-    const res  = await fetch(api("roles/eliminar"), {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: rol.id })
+    const res  = await authFetch(api("roles/eliminar"), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: rol.id })
     })
     const data = await res.json()
     if (data.success) { toast(true, "Rol eliminado."); fetchAll() }
@@ -266,7 +266,7 @@ export function UsuariosPage() {
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Contraseña</label>
-                  <input type="password" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mín. 8 caracteres"
+                  <input type="password" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mín. 12 caracteres"
                     maxLength={128}
                     className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
                 </div>
