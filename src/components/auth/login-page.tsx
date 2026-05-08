@@ -1,6 +1,6 @@
 import { useState, useRef } from "react"
 import { Eye, EyeOff, LogIn } from "lucide-react"
-import { api } from "@/lib/api"
+import { api, setCsrfToken } from "@/lib/api"
 
 interface Props {
   onLogin: (user: AuthUser) => void
@@ -49,6 +49,7 @@ export function LoginPage({ onLogin }: Props) {
       const data = await res.json()
       if (data.success) {
         attempts.current = 0
+        if (data.csrfToken) setCsrfToken(data.csrfToken)
         if (Array.isArray(data.user.permisos)) {
           data.user.permisos = data.user.permisos.map((p: string) => p === "RAG" ? "Contexto IA" : p)
         }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { api, authFetch } from "@/lib/api"
+import { api, authFetch, setCsrfToken } from "@/lib/api"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
 import { KpiCards } from "@/components/dashboard/kpi-cards"
@@ -50,6 +50,7 @@ function App() {
       .then(r => r.json())
       .then(d => {
         if (d.user) {
+          if (d.csrfToken) setCsrfToken(d.csrfToken)
           if (Array.isArray(d.user.permisos)) {
             d.user.permisos = d.user.permisos.map((p: string) => p === "RAG" ? "Contexto IA" : p)
           }
