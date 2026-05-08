@@ -85,8 +85,9 @@ function App() {
     setCurrentView(u.permisos?.[0] ?? "")
   }
 
-  const handleLogout = () => {
-    fetch(api("auth/logout"), { method: "POST", credentials: "include" }).catch(() => {})
+  const handleLogout = async () => {
+    try { await fetch(api("auth/logout"), { method: "POST", credentials: "include" }) } catch {}
+    setCsrfToken("")
     setUser(null)
   }
 
