@@ -46,7 +46,7 @@ function App() {
   const [authReady, setAuthReady] = useState(false)
 
   useEffect(() => {
-    if (sessionStorage.getItem("logged_out") === "1") {
+    if (localStorage.getItem("logged_out") === "1") {
       setAuthReady(true)
       return
     }
@@ -85,7 +85,7 @@ function App() {
   }, [currentView])
 
   const handleLogin = (u: AuthUser) => {
-    sessionStorage.removeItem("logged_out")
+    localStorage.removeItem("logged_out")
     setUser(u)
     setCurrentView(u.permisos?.[0] ?? "")
   }
@@ -93,7 +93,7 @@ function App() {
   const handleLogout = async () => {
     try { await fetch(api("auth/logout"), { method: "POST", credentials: "include" }) } catch {}
     setCsrfToken("")
-    sessionStorage.setItem("logged_out", "1")
+    localStorage.setItem("logged_out", "1")
     setUser(null)
   }
 
